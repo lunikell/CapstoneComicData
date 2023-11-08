@@ -32,7 +32,9 @@ library(bookdown)
 To knit this markdown file the following files have to be have to be placed in the same folder as this file:
               - the bibliography file "bibliography.bib" 
               - the bibliography style file  "ieee.csl" 
+              - optionally the data file "data_comics.RData" (see lines 158 - 162 for explanation)
 !!!!!! -->
+
 \pagenumbering{arabic}
 \newpage
 
@@ -56,7 +58,7 @@ The project is conducted as part of the capstone in the lecture series "Data Sci
 All calculations will be done using the R programming language. @R_language
 
 ## Goal of the Project \label{chapter:goal}
-This project aims at estimating the alignment of a comic character based on other information provided in the dataset. The approaches will be evaluated by calculating the overall accuracy. The goal is to identify, evaluate and compare different possible strategies using the Comic-Characters dataset.
+This project aims at estimating the alignment of a comic character based on other information provided in the dataset. The approaches will be evaluated by calculating the overall accuracy. The goal is to identify, evaluate and compare different possible strategies using the Comic-Characters-Dataset.
  
 ## The Comic-Characters-Dataset
 The Comic-Characters-Dataset was generated as part of the article "Comic Books Are Still Made By Men, For Men And About Men " written by Walt Hickey and published on FiveThirtyEight. @women_comicbooks
@@ -93,9 +95,9 @@ This section describes the methods used to prepare the dataset for the analysis.
 
 The procedure to prepare the dataframe is described in the R documentation of the dataset. @rdoc_comic_characters
 
-By executing this code separate datasets for Marvel and DC characters are downloaded from its github page. They are combined, then the `year` and `align`variables are optimized as described in the documentation.
+By executing this code separate datasets for Marvel and DC characters are downloaded from its github page. They are combined, then the `year` and `align` variables are optimized as described in the documentation.
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(readr))     install.packages("readr"    , repos = "http://cran.us.r-project.org")
 if(!require(dplyr))     install.packages("dplyr"    , repos = "http://cran.us.r-project.org")
@@ -149,25 +151,31 @@ comic_characters <-
     select(publisher, everything(), -c(year2, day))
 ```
 
-
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # remove variables that are not needed anymore
 rm(comic_characters_marvel,comic_characters_dc)
 ```
+
+<!-- Optionally the file "data_comics.RData", which can be downloaded from the github repository or created in the R-File 
+"Capstone_Comicdata.R", can be used. The datafile has to be placed in the same folder as this markdown file. Then the execution of the code above can be prevented using the option "eval=FALSE"-->
+``` {r, echo=FALSE,  message = FALSE, warning = FALSE, results = FALSE} 
+# load("data_comics.RData")
+```
+
 
 ## Data Wrangling
 
 ### General Design of the Dataframe
 The first five ratings in the given dataframe show key features of its general design: @kableExtra
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(kableExtra)) install.packages("kableExtra", repos = "http://cran.us.r-project.org")
 if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 library(tidyverse)
 ```
 
-``` {r, message = FALSE, warnings = FALSE}
+``` {r, message = FALSE, warning = FALSE}
 library(kableExtra)
 
 comic_characters[1:5,1:5] %>% 
@@ -208,7 +216,7 @@ In the following sections data wrangling is performed to extract addition inform
 
 Most data in the dataframe is stored as characters. To perform the analysis they are transformed to factor variables. 
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2 <- comic_characters %>% 
                      mutate(across(c(1,5,6,7,8,9,10,11,14),as.factor))
 ```
@@ -217,20 +225,20 @@ comic_characters2 <- comic_characters %>%
 
 The levels of the `eye` variable in the dataframe contain some `Auburn Hair` entries
 
-``` {r}
+``` {r, warning = FALSE}
 levels(comic_characters2$eye)
 ```
 
 The following entries are affected:
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2 %>% filter(!is.na(eye)) %>% filter(eye =="Auburn Hair")
 ```
 
 They are all DC characters. A quick search on the DC-Comic-Database @DC_wiki (on which this dataset is based) shows, that all characters really have auburn hair and different eye colors. Thus these entries are false and should be corrected.
 
-The following code corrects the hair information to `Auburn Hair`. The eye color is added based on pictures in the DC-database.
+The following code corrects the hair information to `Auburn Hair`. The eye color is added based on pictures in the DC database.
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2[comic_characters2$page_id == 80676,  "hair"] <- "Auburn Hair"
 comic_characters2[comic_characters2$page_id == 80676,  "eye"]  <- "Blue Eyes"
 
@@ -254,12 +262,12 @@ comic_characters2[comic_characters2$page_id ==   4935, "eye"]  <-  NA
 ```
 
 Then all levels that are not used in the dataframe are dropped:
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2 <- droplevels(comic_characters2)
 ```
 
 Now the level `Auburn Hair` is not present in the `eye` variable anymore:
-``` {r}
+``` {r, warning = FALSE}
 levels(comic_characters2$eye)
 ```
 
@@ -267,7 +275,7 @@ levels(comic_characters2$eye)
 ### Extract RGB Information of Eye Color \label{chapter:RGBeye}
 
 The eye color is stored in a character string. The dataframe contains 26 different colors. 
-``` {r}
+``` {r, warning = FALSE}
 levels(comic_characters2$eye)
 ```
 
@@ -275,12 +283,12 @@ To obtain information about the relation between these colors (eg. which are mor
 The colors are based on the list of color shades on wikipedia @Wikipedia_color and the website color-name.com @color_name. 
 
 First a new column named `eye_HEX` is created and initialized with NA-values.
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2$eye_HEX <- NA
 ```
 
-Then this column is filled with the HEX values based on the entry in the `eye` column. Some levels of eye don't describe a color, but the form of eyes of this character, eg. `Compound Eyes` or `No Eyes`. The HEX value for these entries is set to `NA`, as there is no color information available. 
-``` {r}
+Then this column is filled with the HEX values based on the entry in the `eye` column. Some levels of the `eye`variable don't describe a color, but the form of eyes of this character, eg. `Compound Eyes` or `No Eyes`. The HEX value for these entries is set to `NA`, as there is no color information available. 
+``` {r, warning = FALSE}
 comic_characters2$eye_HEX[comic_characters2$eye == "Amber Eyes"]         <- "#FFBF00"
 comic_characters2$eye_HEX[comic_characters2$eye == "Black Eyeballs"]     <- "#000000"
 comic_characters2$eye_HEX[comic_characters2$eye == "Black Eyes"]         <- "#000000"
@@ -310,7 +318,7 @@ comic_characters2$eye_HEX[comic_characters2$eye == "Yellow Eyes"]        <- "#FF
 
 Afterwards the HEX values are converted to RGB and stored in three new, separate columns `eye_R`, `eye_G` and `eye_B`.
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2$eye_R <- col2rgb(comic_characters2$eye_HEX)[1,]
 comic_characters2$eye_G <- col2rgb(comic_characters2$eye_HEX)[2,]
 comic_characters2$eye_B <- col2rgb(comic_characters2$eye_HEX)[3,]
@@ -318,7 +326,7 @@ comic_characters2$eye_B <- col2rgb(comic_characters2$eye_HEX)[3,]
 
 The `col2rgb` command interprets `NA` values as black (255-255-255). They are set to the  median value of the column manually. 
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2$eye_R[is.na(comic_characters2$eye_HEX)] <- 
                        median(comic_characters2$eye_R, na.rm = TRUE)
 comic_characters2$eye_G[is.na(comic_characters2$eye_HEX)] <- 
@@ -333,13 +341,13 @@ The same operations are performed to extract the RGB color information from the 
 
 There are the following levels in the `hair` variable: 
 
-``` {r}
+``` {r, warning = FALSE}
 levels(comic_characters2$hair)
 ```
 
 Then the HEX color values are added in the column `hair_HEX`
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2$hair_HEX <- NA
 comic_characters2$hair_HEX[comic_characters2$hair == "Auburn Hair"]           <- "#A52A2A"
 comic_characters2$hair_HEX[comic_characters2$hair == "Bold"]                  <-  NA
@@ -372,7 +380,7 @@ comic_characters2$hair_HEX[comic_characters2$hair == "Yellow Hair"]           <-
 
 Afterwards the values are converted to RGB and the `NA` values corrected:
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2$hair_R <- col2rgb(comic_characters2$hair_HEX)[1,]
 comic_characters2$hair_G <- col2rgb(comic_characters2$hair_HEX)[2,]
 comic_characters2$hair_B <- col2rgb(comic_characters2$hair_HEX)[3,]
@@ -390,19 +398,19 @@ comic_characters2$hair_B[is.na(comic_characters2$hair_HEX)] <-
 
 Finally the columns which are not needed in the further examination are removed using the `select` command from the **`tidyverse`** package. @tidyverse
 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2 <- comic_characters2 %>% 
   subset(select = -c(urlslug, first_appearance,date,eye_HEX,hair_HEX)) 
 ```
 
 The goal in this report is to estimate the alignment of the characters. But the `align` variable contains a high amount of `NA` values. Their share can be calculated using the following code:
 
-``` {r}
+``` {r, warning = FALSE}
 share_NA_in_align <- sum(is.na(comic_characters2$align)) / nrow(comic_characters2) * 100
 ```
 
 It results to `r round(share_NA_in_align,1)` %. Those `NA` values do not contain any information and cannot be estimated. They are removed from the dataframe. 
-``` {r}
+``` {r, warning = FALSE}
 comic_characters2 <- comic_characters2 %>% 
   filter(!is.na(align))
 ``` 
@@ -430,7 +438,7 @@ The optimized `comic_characters2` dataframe contains the following columns:
 * __`hair_B:`__ RGB value for red (B) of hair color
 
 ## Partitioning of the Dataset
-The `comic_characters2` dataframe is partitioned into a `train` and a `test` dataset using the **`caret`** package. @caret The `train` set includes 90% of the data and is used to train the algorithm. To evaluate the methods the rest of the data in the `test` set will be used.
+The dataframe is partitioned into a `train` and a `test` dataset using the **`caret`** package. @caret 
 
 ``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
@@ -441,13 +449,13 @@ if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.
 library(caret)
 
 set.seed(1)
-test_index <- createDataPartition(comic_characters2$align, 
-                                  times = 1, 
-                                  p = 0.1, 
-                                  list = FALSE)
+test_index <- createDataPartition(comic_characters2$align, times = 1, 
+                                  p = 0.1, list = FALSE)
 test  <- comic_characters2[test_index,]     # 10% of data
 train <- comic_characters2[-test_index,]    # 90% of data
 ```
+
+The `train` set includes with 90% and `r nrow(train)` entries the majority of the data and is used to train the algorithm. To evaluate the methods the rest of the data in the `test` set with `r nrow(test)` entries will be used. This partitioning makes sure that there is enough data for testing while only a minimum of the data is lost for training.
 
 All exploration will be done using the `train` dataset.
 
@@ -455,10 +463,10 @@ All exploration will be done using the `train` dataset.
 
 ## Data Exploration and Visualization
 
-The plots for the visualization are inspired by the R-Graph-Gallery. @r_gallery They are calculated using the **`ggplot2`** package. @ggplot2
+The plots for the visualization are inspired by the R-Graph-Gallery @r_gallery and created using the **`ggplot2`** package. @ggplot2
 
 ### Number of NA Values
-Most columns in the dataframe contain lots of `NA` values. Figure \@ref(fig:NAspider) shows a radar chart of the `NA` values. It is created using the **`fmbs`** package. @fmsb
+Most columns in the dataframe contain lots of `NA` values. Figure \@ref(fig:NAspider) shows a radar chart of the `NA` values. It is computed using the **`fmbs`** package. @fmsb
 
 ``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
@@ -471,21 +479,21 @@ library(fmsb)
 
 The columns with the RGB color information, which were derived from the color names, include zero `NA` values as They were removed manually and set to the median values (see chapters \ref{chapter:RGBeye} and \ref{chapter:RGBhair}). That is why they are excluded from the following visualization. 
 
-A dataframe `data_NA` is extracted from `train` that summarizes the number of `NA` values.
+A dataframe `data_NA` is extracted from `train`. It summarizes the number of `NA` values.
 
-``` {r}
+``` {r, warning = FALSE}
 data_NA <- train %>% 
            subset(select = -c(eye_R,eye_G,eye_B,hair_R,hair_G,hair_B)) %>% 
            summarise(across(everything(), ~ sum(is.na(.)))) 
 ```
 
 The values are converted to percent of the whole `train` dataframe.
-``` {r}
+``` {r, warning = FALSE}
 data_NA <- data_NA/nrow(train)*100
 ```
 
 The results can be seen in this table:
-``` {r}
+``` {r, warning = FALSE}
 data_NA %>% pivot_longer(everything()) %>% 
             arrange(desc(value)) %>%
             kbl(booktabs = T, linesep = "") %>% 
@@ -493,7 +501,7 @@ data_NA %>% pivot_longer(everything()) %>%
 ```
 
 To scale the plot additional columns have to be added which contain the minimum an maximum values for the plot axis.
-``` {r}
+``` {r, warning = FALSE}
 data_NA <- rbind(rep(100,13) , rep(0,13) , data_NA)
 ```
 
@@ -518,21 +526,21 @@ The number of `NA` values differs over the variables. In the `gsm` column nearly
 The `eye` column contains about 56% and the `hair` column about 27% `NA` values. The high number of `NA` values makes these variables difficult for any analysis. 
 
 The `id` variable contains about 22% `NA` values, similar to `hair`.
-The variables `month`, `align`, `name`, `page_id` and `publisher` contain no `NA` values at all. `alive`, `year`, `sex` and `appearances` only very few (<6%). They are well suited for further analysis.
+The variables `month`, `align`, `name`, `page_id` and `publisher` contain no `NA` values at all, `alive`, `year`, `sex` and `appearances` only very few (<6%). They are well suited for further analysis.
 
 
 ### Eye and Hair Colors
 
 To visualize the eye and hair color information the data is extracted and the number of elements of each level are counted.
 
-``` {r}
+``` {r, warning = FALSE}
 data_eye  <- train %>% group_by(eye)  %>% summarize(count = n()) %>% arrange(desc(count))
 data_hair <- train %>% group_by(hair) %>% summarize(count = n()) %>% arrange(desc(count))
 ```
 
 The results are shown in these tables:
 
-``` {r}
+``` {r, warning = FALSE}
 t1 <- data_eye
 t2 <- data_hair
 knitr::kable(list(t1, t2),booktabs = T, linesep = "") %>% 
@@ -604,7 +612,7 @@ train %>% filter(align!="Reformed Criminals") %>%
 Figure \@ref(fig:sexAlignFill) shows the same data, but the bars are all scaled to 1. Now the distribution of the alignment in each sex can be evaluated. Note that as there is only one transgender and one genderfluid character in the datset those bars are uniform. 
 
 In nearly all sexes considerably more bad than good aligned characters can be found. 
-Only female and the one genderfluid character are mostly aligned good. That shows that the comic characters in this dataset show a clear sexist bias. This has been been stated before in the artice "Comic Books Are Still Made By Men, For Men And About Men "published on FiveThirtyEight. @women_comicbooks
+Only female characters and the one genderfluid character are mostly aligned good. That shows that the comic characters in this dataset show a clear sexist bias. This has been been stated before in the artice "Comic Books Are Still Made By Men, For Men And About Men "published on FiveThirtyEight. @women_comicbooks
 
 Nevertheless the sex information is a good candidate for machine learning concepts.
 
@@ -612,11 +620,11 @@ Nevertheless the sex information is a good candidate for machine learning concep
 
 ### Alignment vs. Eye and Hair Color Values
 
-The relation between alignment and hair and eye colors is discussed in this chapter. The level `Reformed Criminals` are left out again as described before.
+The relation between alignment and hair and eye colors is discussed in this chapter. The level `Reformed Criminals` is left out again as described before.
 
-Figure \@ref(fig:violinEye) shows a violin plots of the distribution of the RGB-values of the eye color over the alignment. The same plot for the hair color can be found in figure \@ref(fig:violinHair). 
+Figure \@ref(fig:violinEye) shows a violin plots of the distribution of the RGB values of the eye color over the alignment. The same plot for the hair color can be found in figure \@ref(fig:violinHair). 
 
-The RGB-values respectively show similar distributions for good and bad characters Nevertheless differences can be seen. Especially in the eye color (figure \@ref(fig:violinEye)) the middle part of the distribution of blue and green is increased for good characters. The hair color plot (figure \@ref(fig:violinHair)) shows only little difference between good and bad characters.
+The RGB values respectively show similar distributions for good and bad characters Nevertheless differences can be seen. Especially in the eye color (figure \@ref(fig:violinEye)) the middle part of the distribution of blue and green is increased for good characters. The hair color plot (figure \@ref(fig:violinHair)) shows only little difference between good and bad characters.
 
 ``` {r violinEye,fig.align = 'center', fig.asp = 0.8, out.width = "100%", out.height = "50%", fig.cap= 'Violin plot of eye color RGB values over character alignment (without level "Reformed Criminals")', message = FALSE, warning = FALSE}
 train %>% filter(align!="Reformed Criminals") %>% 
@@ -653,10 +661,10 @@ train %>% filter(align!="Reformed Criminals") %>%
 The relationship between variables can be detected by doing an association analysis. The results can be used to determine which variables are well suited to use in machine learning algorithms. 
 
 It is important to distinguish two general types: numeric and categorical data. @types_data
-Quantitative (_numerical_) data contains any discrete or continuous values, which describe some feature, eg. the `year` the comic was published or the number of `appearances` of a character. 
-Non numeric elements are called qualitative (_categorical_) data. This kind of data includes any named elements or categories eg. the hair color of a character. In some cases these categories can be ordered like the alignment from good to bad.  
+Quantitative (numerical) data contains any discrete or continuous values, which describe some feature, eg. the year the comic was published or the number of appearances of a character. 
+Non numeric elements are called qualitative (categorical) data. This kind of data includes any named elements or categories eg. the hair color of a character. In some cases these categories can be ordered like the alignment from good to bad.  
 
-Most of the 13 variables in the train dataframe are categorical (factors or character variables). Only three are numerical.
+Most of the 13 variables in the `train` dataframe are categorical (factors or character variables). Only three are numerical.
 
 The method to analyse the association differs depending on the type of data:
 
@@ -698,7 +706,7 @@ Cramer's V is one method to determine the association of two categorical variabl
   V = \frac{\chi^2}{\chi^2_{max}} = \frac{\chi^2}{n_{sample}- m_{cat}}
 \end{equation}
 
-$m_{cat}$ is the smaller number of categories of both variables:
+$m_{cat}$ is the smaller number of categories of both variables minus 1:
 
 \begin{equation}
   m_{cat} = min(n_{cat} - 1)
@@ -710,12 +718,12 @@ Compared to correlation analysis the resulting values are much smaller, especial
 
 In R it can be calculated using the **`rcompanion`** package @rcompanion and the command `cramerV`.
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(rcompanion)) install.packages("rcompanion", repos = "http://cran.us.r-project.org")
 ```
 
-``` {r}
+``` {r, warning = FALSE}
 library(rcompanion)
 ```
 
@@ -729,7 +737,7 @@ The implementation of the association analysis is based on code proposed in @cor
 
 First two functions are implemented to evaluate if a variable is nominal or numeric:
 
-``` {r}
+``` {r, warning = FALSE}
 is_nominal_value <- function(val){
     is.factor(val) || is.character(val)
     }
@@ -741,23 +749,23 @@ is_numeric_value <- function(val){
 
 The variables `name` and `page_id` in the dataframe contain only unique information. They are not suited for association analysis. That is why they are removed from the `train` dataframe and the new subset `train_assoc` is created:
 
-``` {r}
+``` {r, warning = FALSE}
 train_assoc <- train %>% subset(select = -c(page_id,name))
 ```
 
 The `train_assoc` dataframe contains of 11 variables. All possible combinations of these variables are calculated:
-``` {r}
+``` {r, warning = FALSE}
 combi <-crossing(1:ncol(train_assoc),1:ncol(train_assoc))
 ```
 
 Than the column names of these variables are extracted and stored in `col_names`:
-``` {r}
+``` {r, warning = FALSE}
 col_names <- names(train_assoc)
 ```
 
 A function `calc_association` is built to calculate the association values of all elements in the dataframe `data` depending on the combination of data types using the methods described above:
 
-``` {r}
+``` {r, warning = FALSE}
 calc_association <- function(pos1,pos2){
     xdata <- pull(train_assoc,pos1)
     xname <- col_names[pos1]
@@ -798,7 +806,7 @@ Finally the association values of all combinations are calculated:
 if(!require(fBasics)) install.packages("fBasics", repos = "http://cran.us.r-project.org")
 ```
 
-``` {r}
+``` {r, warning = FALSE}
 library(fBasics)
 association_matrix <- map2_df(rowVec(combi[,1]), rowVec(combi[,2]), calc_association)
 ```
@@ -807,7 +815,7 @@ The **`fBasics`** package @fBasics is needed to create row-vectors from numeric 
 
 ### Results of Association Analysis \label{chapter:resultsAssociation}
 The results of the association analysis are plotted separately for each association type in tile diagrams. They are shown and discussed in this section. 
-The machine learning models in chapter \ref{chapter:modelling} aim at estimating the alignment of the characters. A special interested will be taken in the association of this variable with others in the dataset. 
+The machine learning models in chapter \ref{chapter:modelling} aim at estimating the alignment of the characters. Thus a special interested will be taken in the association of the `align` variable with others in the dataset. 
 
 __Correlation__
 
@@ -852,9 +860,9 @@ __Cramer's V__
 
 Figure \@ref(fig:plotCramerV) shows the results of the Cramer's V calculations. 
 The month of first publication and the publisher are highly associated (values close to 1). That is probably due to the individual publication cycle of the two publishers.
-As described before in Cramers'V lower values might already show a relevant association. That in mind an association between the alignment of the characters and the hair and eye color names seems to be relevant as well as `sex` and `id`. The variables `alive` and `publisher` seem to be less associated. Nevertheless it will be worth to try these variables later. 
+As described before in Cramer's V lower values might already show a relevant association. That in mind an association between the alignment of the characters and the hair and eye color names seems to be relevant as well as the variables `sex` and `id`. The variables `alive` and `publisher` seem to be less associated. Nevertheless it will be worth to try these variables later. 
 
-``` {r plotCramerV, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warnings = FALSE, fig.cap= 'Results of CramersV analysis of categorical variables in the train dataframe'}
+``` {r plotCramerV, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warnings = FALSE, fig.cap= 'Results of Cramers V analysis of categorical variables in the train dataframe'}
 association_matrix %>%
   filter(type=="cramersV") %>%
   ggplot(aes(xname,yname,fill=assoc_value))+
@@ -873,7 +881,7 @@ association_matrix %>%
 
 ## Modelling Approach \label{chapter:modelling}
 
-In this chapter different models will be created using the `train` dataset. It then will be evaluated using the `test` dataset.
+In this chapter different models will be created using the `train` dataset. They will then be evaluated using the `test` dataset.
 
 The approaches are evaluated by calculating their overall accuracy.
 
@@ -892,7 +900,7 @@ The most simple and baseline approach is to simply guess the outcome.
 
 As there are only very few `Reformed Criminals` in the data, only the other alignments `Good Characters` and `Bad Characters` are used as possible guesses. 
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 
 timeStart <- Sys.time() # get start time of calculation
@@ -907,7 +915,7 @@ timeDiff1 <- timeEnd - timeStart
 
 Then the overall accuracy $acc_{1}$ in the test set using this approach is calculated:
 
-``` {r}
+``` {r, warning = FALSE}
 acc1 <- mean(y_hat1 == test$align)
 ```
 
@@ -925,7 +933,7 @@ if(!require(splines)) install.packages("splines", repos = "http://cran.us.r-proj
 if(!require(foreach)) install.packages("foreach", repos = "http://cran.us.r-project.org")
 ```
 
-``` {r}
+``` {r, warning = FALSE, message=FALSE}
 library(gam)
 library(splines)
 library(foreach)
@@ -936,7 +944,7 @@ The `gamloess` algorithm cannot deal with `NA` values in the data. Thus only the
 
 #### (2a) Estimation using Hair and Eye RGB Values \newline
 
-The calculated RGB values are used to calculate a fit and `gamLoess`. Afterwards the prediction $\hat{y}_{2a}$ is calculated. The time is measured using the method described above.
+The calculated RGB values are used to calculate a fit with `gamLoess`. Afterwards the prediction $\hat{y}_{2a}$ is calculated. The time is measured using the method described above.
 
 ``` {r, message = FALSE, warning = FALSE, results=FALSE}
 timeStart <- Sys.time() # get start time of calculation
@@ -958,12 +966,12 @@ timeDiff2a <- timeEnd - timeStart
 These calculations took $\Delta t_{2a} =$ `r round(timeDiff2a,5)` seconds.
 
 The overall accuracy is calculated using this code. 
-``` {r}  
+``` {r, warning = FALSE}  
 acc2a <- mean(y_hat2a == test$align) 
 ```
 
 The accuracy $acc_{2a}$ is `r round(acc2a,3)`. This is worse than guessing the outcome in model 1. 
-Figure \@ref(fig:plotLoess2a) shows the values of the alignment variable`align` in the prediction `y_hat2a` and the `test` set. The model estimated exclusively `Bad Characters` and `Reformed Criminals` but no `Good Characters`. In the `train` set as well as in the `test` set nearly no `Reformed Criminals` can be found. This error is probably due to the transformation of the estimated numeric values to  ordered levels as `Reformed Criminals` is the mid level. 
+Figure \@ref(fig:plotLoess2a) shows the values of the alignment variable `align` in the prediction `y_hat2a` and the `test` set. The model estimated exclusively `Bad Characters` and `Reformed Criminals` but no `Good Characters`. In the `train` set as well as in the `test` set nearly no `Reformed Criminals` can be found. This error is probably due to the transformation of the estimated numeric values to  ordered levels as `Reformed Criminals` is the mid level. 
 
 ``` {r plotLoess2a, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Distribution of alignments in prediction and the test dataset'}
 results_mod2a  <- data.frame(y_hat2a,test$align) %>% pivot_longer(everything()) 
@@ -975,11 +983,11 @@ results_mod2a %>% ggplot(aes(x=name,fill=value)) +
 
 #### (2b) Model without Level `Reformed Criminals` \newline
 
-To improve the estimation the level `Reformed Criminals`is removed from the training set. 
+To improve the estimation the level `Reformed Criminals` is removed from the training set. 
 
 A new training dataset `train2b` is created:
 
-``` {r}  
+``` {r, warning = FALSE}  
 train2b <- train %>% filter(align!="Reformed Criminals") 
 train2b <- droplevels(train2b)
 ```
@@ -1004,7 +1012,7 @@ The calculations took $\Delta t_{2b} =$ `r round(timeDiff2b,5)` seconds
 
 Then the accuracy of the improved model is calculated:
 
-``` {r}
+``` {r, warning = FALSE}
 acc2b <- mean(y_hat2b == test$align) 
 ```
 
@@ -1027,7 +1035,7 @@ As the given dataset includes mostly categorical data decision trees are an inte
 if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
 ```
 
-``` {r}
+``` {r, warning = FALSE, message =FALSE}
 library(rpart)
 ```
 
@@ -1037,7 +1045,7 @@ In this chapter different approaches using decision trees are discussed.
 
 First the data is fitted on the `train` dataset. Then this fit is used to predict the alignments in the `test` set
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 
 timeStart <- Sys.time() # get start time of calculation
@@ -1070,7 +1078,7 @@ prp(fit3a, type=2, extra=0)
 
 Figure \@ref(fig:decTree3a) shows the resulting decision tree. In the plot the names of the eye and hair colors are abbreviated in a strange way and some letters are missed out. Nevertheless the original names can still be guessed. 
 Then the overall accuracy is calculated:
-``` {r}
+``` {r, warning = FALSE}
 acc3a <- mean(y_hat3a == as.numeric(test$align)) 
 ```
 
@@ -1082,7 +1090,7 @@ Now the eye and hair color information will be included using the numeric RGB va
 
 First the fit and predict operations are carried out as described before.
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 
 timeStart <- Sys.time() # get start time of calculation
@@ -1101,7 +1109,7 @@ timeDiff3b <- timeEnd - timeStart
 ```
 
 Afterwards the overall accuracy is calculated:
-``` {r}
+``` {r, warning = FALSE}
 acc3b <- mean(y_hat3b == as.numeric(test$align)) 
 ```
 
@@ -1113,17 +1121,17 @@ The calculated decision tree can be seen in figure \@ref(fig:decTree3b).
 prp(fit3b, type=2, extra=0)
 ```
 
-The decisions are based on numeric values being higher or lower than specific limits. At the same time the resulting tree is very simple. This can be changed by optimizing the parameter $c_p$ as performed in model 3d later.
+The decisions are based on only one numeric value being higher or lower than a specific limit. The resulting tree is very simple. This can be changed by optimizing the parameter $c_p$ as performed in model 3d later.
 
 #### (3c) Adding other information from the dataframe \newline
 
-Now the variables `sex`, `alive`, `appearances`, `year`, `publisher` and `id` are added to the model to increase its performance. All these variables showed some association in the Cramers'V analysis in chapter \@ref{chapter:resultsAssociation}.
+Now the variables `sex`, `alive`, `appearances`, `year`, `publisher` and `id` are added to the model to increase its performance. All these variables showed some association in the Cramer's V analysis in chapter \ref{chapter:resultsAssociation}.   
 
 Especially `sex` should include valuable information as the analysis in chapter \ref{chapter:alignSex} showed a clear relation of sex and alignment. 
 
 The calculations are performed as described above
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 
 timeStart <- Sys.time() # get start time of calculation
@@ -1159,7 +1167,7 @@ The value of $c_p$ has to be selected. This can be achieved by optimizing the gi
 
 The optimization is done using only the `train` dataset. It is parted again to get the new `train_from_train` and `test_from_train` datasets:
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 # create new data partitions for optimization with train dataset
 test_index <- createDataPartition(train$align, times = 1, p = 0.2, list = FALSE)
@@ -1169,13 +1177,13 @@ train_from_train <- train[-test_index,]    # 90% of data
 
 Using these new datasets $c_p$ is optimized. First vector of possible values is created:
 
-``` {r}
+``` {r, warning = FALSE}
 cp_values =seq(0,0.015, len = 25)  
 ```
 
 Afterwards the accuracy for each $c_p$ value in the vector is computed:
 
-``` {r}
+``` {r, warning = FALSE}
 acc_values <- sapply(cp_values, function(cp_val){
   # Fit
   fit_opt <- rpart(align ~ hair_R + hair_G + hair_B + eye_R + eye_G + eye_B + 
@@ -1192,14 +1200,14 @@ acc_values <- sapply(cp_values, function(cp_val){
 
 The results are given in figure \@ref(fig:plotcp).
 
-``` {r plotcp, fig.align = 'center', fig.asp = 0.6, out.width = "100%",  message = FALSE, warnings = FALSE, fig.cap= 'Results of the optimization of $c_p$'}
+``` {r plotcp, fig.align = 'center', fig.asp = 0.55, out.width = "100%",  message = FALSE, warnings = FALSE, fig.cap= 'Results of the optimization of $c_p$'}
 results_cp <- data.frame(cp_values,acc_values)
 results_cp %>% ggplot(aes(x=cp_values, y=acc_values)) + geom_point()
 ```
 
 The optimal $c_p$ is the value for maximal accuracy:
 
-``` {r}
+``` {r, warning = FALSE}
 cp_opt <- cp_values[which.max(acc_values)]
 ```
 
@@ -1209,7 +1217,7 @@ It  is `r cp_opt`.
 
 Now model 3c is recalculated using the optimized $c_p$ value. 
 
-``` {r}
+``` {r, warning = FALSE}
 set.seed(1)
 
 timeStart <- Sys.time() # get start time of calculation
@@ -1247,12 +1255,15 @@ The decision tree got much more complex and more information in the data got use
 
 This chapter presents the results of the different machine learning concepts which were developed in chapter \ref{chapter:modelling}. For each model the overall accuracy $acc$ on the `test` set as well as the computation time $\Delta t$ are shown in table 1. 
 
-The first approach only guesses the outcome as an estimate (model1). It has an accuracy $acc_{1}$ of `r round(acc1,3)`. The prediction is computed in $\Delta t_{1} =$ `r round(timeDiff1,5)` seconds and very fast. 
+The first approach only guesses the outcome as a baseline estimate (model1). It has an accuracy $acc_{1}$ of `r round(acc1,3)`. The prediction is computed in $\Delta t_{1} =$ `r round(timeDiff1,5)` seconds and very fast. 
 
-Then a local regression (loess) estimation was performed. In model 2a many levels are estimated wrong as "`eformed Criminals` and the resulting accuracy $acc_{2a}$ of `r round(acc2a,3)` is even below the one achieved by guessing the outcome. At the same time it is a lot slower with $\Delta t_{2a} =$ `r round(timeDiff2a,5)` seconds. A much better accuracy of $acc_{2b} =$ `r round(acc2b,3)` can be reached with a similar loess estimation but after the level `Reformed Criminals` has been removed from the `train` dataset in model 2b. This approach is also a little faster with $\Delta t_{2b} =$ `r round(timeDiff2a,5)` seconds.
+Then a local regression (loess) estimation was performed. In model 2a many levels are estimated wrong as `Reformed Criminals` and the resulting accuracy $acc_{2a}$ of `r round(acc2a,3)` is even below the one achieved by guessing the outcome. At the same time it is a lot slower with $\Delta t_{2a} =$ `r round(timeDiff2a,5)` seconds. A much better accuracy of $acc_{2b} =$ `r round(acc2b,3)` can be reached with a similar loess estimation but after the level `Reformed Criminals` has been removed from the `train` dataset in model 2b. This approach is a little slower with $\Delta t_{2b} =$ `r round(timeDiff2b,5)` seconds.
 
-To include categorical values the next approach is performed using decision trees. In model 3a the eye and hair color names are includes as categorical data. This leads to an accuracy $acc_{3a}$ of `r round(acc3a,3)` which is much better than guessing. The computation takes $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds. The next model uses the RGB values of eye and hair color instead of the color names. The computation time is reduced noteworthy by `r round(timeDiff3a,5) - round(timeDiff3b,5)` seconds to $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds. The accuracy improves little to $acc_{3b} =$ `r round(acc3b,3)`. Better results can be achieved in model 3c by adding other (categorical) information. This results in an accuracy $acc_{3c}$ of `r round(acc3c,3)`. The computation time is $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds and a little higher than in model 3b but still a lot faster than using categorical hair and eye color names. 
-The best results can be achieved using this approach and an optimized parameter $c_p$. Then the accuracy $acc_{3d}$ is `r round(acc3d,3)` and the computation time `r round(timeDiff3d,5)` seconds. 
+To include categorical variables the next approach is performed using decision trees. In model 3a the eye and hair color names are included as categorical data. This leads to an accuracy $acc_{3a}$ of `r round(acc3a,3)` which is much better than guessing. The computation takes $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds. The next model uses the RGB values of eye and hair color instead of the color names. The computation time is reduced noteworthy by `r round(timeDiff3a,5) - round(timeDiff3b,5)` seconds to $\Delta t_{3b} =$ `r round(timeDiff3b,5)` seconds. 
+The accuracy improves little to $acc_{3b} =$ `r round(acc3b,3)`. Better results can be achieved in model 3c by adding other (categorical) information. This results in an accuracy $acc_{3c}$ of `r round(acc3c,3)`. The computation time is $\Delta t_{3c} =$ `r round(timeDiff3c,5)` seconds and a little higher than in model 3b but still a lot faster than using categorical hair and eye color names. 
+The best results can be achieved using this approach and an optimized parameter $c_p$. Then the accuracy $acc_{3d}$ is `r round(acc3d,3)` and the computation time $\Delta t_{3d}$ is `r round(timeDiff3d,5)` seconds. 
+
+
 
 Nevertheless all reached accuracies are quite low. This is probably due to the nature of the dataset. It includes mostly categorical data, which can't be used in many modelling approaches. At the same time important variables include more than 20% (and up to 99%) `NA` values. This incomplete information in the dataset reduces the prediction quality. 
 
@@ -1268,6 +1279,7 @@ Nevertheless all reached accuracies are quite low. This is probably due to the n
 | 3c      | Decision Tree: Other information added         | RGB colors (eye and hair), sex, alive, appearances, year, publisher,id   | `r round(acc3c,3)` | `r round(timeDiff3c,5)` |
 | 3d      | Decision Tree: Optimized $c_p$                 | RGB colors (eye and hair), sex, alive, appearances, year, publisher,id | `r round(acc3d,3)` | `r round(timeDiff3d,5)` |
 
+\newpage
 
 # Conclusion
 
@@ -1275,14 +1287,14 @@ In this report the Comic-Characters-Dataset was analysed and machine learning al
 
 First the dataset was optimized so that the hair and eye color are available as numerical RGB values. Data exploration shows that for many characters not all information is included. This results in a lot of `NA` values in the dataframe. 
 
-An association analysis is performed to analyse which variables that are well suited for machine learning. It becomes clear that many variables are relevant candidates. 
+An association analysis is performed to analyse which variables are well suited for machine learning. It becomes clear that many variables are relevant candidates. 
 
 Three different machine learning concepts are tested in seven models to estimate the alignment of the characters. First the outcome is guessed, than a local regression method is tested (loess) using the RGB color information. 
 The model has problems dealing with the `NA` values in the dataset. Thus only the cleaned RGB values can be used and no other variables. 
 
 Finally decision trees are computed to use categorical as well as numerical inputs.
 It can be shown that a significant reduction of computation time can be achieved, if the colors are included as RGB values. 
-Best results can be achieved using a decision tree with RGB colors (eye and hair), `sex`, `alive`, `appearances`, `year`, `publisher` and `id` as input variables. Nevertheless only an overall accuracy of `r round(acc3d,3)` can be achieved.
+Best results can be achieved using a decision tree with RGB colors (eye and hair), `sex`, `alive`, `appearances`, `year`, `publisher` and `id` as input variables. Nevertheless only an overall accuracy of `r round(acc3d,3)` can be reached
 
 This quite low value can be explained by the difficult nature of the dataset. It contains mostly categorical data which is more difficult to deal with. At the same time important variables contain more than 20% `NA` values. This makes every approach very difficult.
 
@@ -1290,7 +1302,7 @@ Nevertheless the analysis in this work shows clearly that it is possible to pred
 
 In future work it would be interesting to test imputation methods to reduce the number of `NA` values in the dataset. This could lead to better results. At the same time other methods to train machine learning models should be tested. 
 
-This work focused on the  bias of comic characters regarding their alignment. It would be interesting to analyse other possible biases in comic characters es well, eg. their chance to survive.
+This work focused on the  bias of comic characters regarding their alignment. It would be interesting to analyse other possible biases in comic characters as well, eg. their chance to survive.
 
 \newpage
 

@@ -54,17 +54,21 @@ comic_characters <-
 
 rm(comic_characters_marvel,comic_characters_dc)
 
-#---------------------------------------------------------
-# To save time when running the file multiple times the dataset edx can be stored in an extra file.
-# To do this uncommend the next lines and afterwards line 71. 
-# The created files have to be placed in the same folder as the code and the working directory has to be set to this folder!
+# --------------------------------------------------------
+# Save dataframe to data_comics.RData
+# --------------------------------------------------------
+# To save time when running the file multiple times the dataset was stored in an extra file using the following line. 
+# It can also be downloaded from the github repository.
+# The created file has to be placed in the same folder as the code and the working directory has to be set to this folder!
 # save(comic_characters, file = "data_comics.RData")
+# Afterwards it can be loaded using the following line 68.
 
 # --------------------------------------------------------
-# Load comic_characters dataframe 
+# Load dataframe from data_comics.RData
 # --------------------------------------------------------
-# If the dataset has been stored before in a separate file (see above lines 56+66) uncommend the next line to load it. 
+# If you want to load the data from file uncommend the next line to load it. 
 # load("data_comics.RData")
+# The dataset has to be downloaded from the github repository or stored in a separate file before (see lines 58-61 above) 
 
 
 ##########################################################
@@ -264,6 +268,9 @@ test_index <- createDataPartition(comic_characters2$align,
                                   list = FALSE)
 test  <- comic_characters2[test_index,]     # 10% of data
 train <- comic_characters2[-test_index,]    # 90% of data
+
+nrow(train)
+nrow(test)
 
 ##########################################################
 # Data Exploration and Visualization
