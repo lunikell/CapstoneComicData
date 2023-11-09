@@ -801,7 +801,7 @@ calc_association <- function(pos1,pos2){
 
 Finally the association values of all combinations are calculated:
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(fBasics)) install.packages("fBasics", repos = "http://cran.us.r-project.org")
 ```
@@ -823,7 +823,7 @@ Figure \@ref(fig:plotCorr) shows the results of the correlation analysis. The RG
 
 Year of introduction and the number of appearances of a comic character are only very little correlated with all other variables.
 
-``` {r plotCorr, fig.align = 'center', fig.asp = 0.8, out.width = "100%", fig.pos = "H", message = FALSE, warnings = FALSE, fig.cap= 'Results of correlation analysis of numeric variables in the train dataframe'}
+``` {r plotCorr, fig.align = 'center', fig.asp = 0.8, out.width = "100%", fig.pos = "H", message = FALSE, warning = FALSE, fig.cap= 'Results of correlation analysis of numeric variables in the train dataframe'}
 association_matrix %>%
   filter(type=="correlation") %>%
   ggplot(aes(xname,yname,fill=assoc_value))+
@@ -842,7 +842,7 @@ __ANOVA__
 The results of the ANOVA analysis can be found in figure \@ref(fig:plotANOVA). 
 The categorical name of the hair and eye color respectively and their RGB values are perfectly correlated (value 1). The alignment (variable `align` which we will try to estimate later) shows only little association with the RGB color values and even less with all other variables.
 
-``` {r plotANOVA, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warnings = FALSE, fig.cap= 'Results of ANOVA analysis of variables in the train dataframe'}
+``` {r plotANOVA, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warning = FALSE, fig.cap= 'Results of ANOVA analysis of variables in the train dataframe'}
 association_matrix %>%
   filter(type=="anova") %>%
   ggplot(aes(xname,yname,fill=assoc_value))+
@@ -862,7 +862,7 @@ Figure \@ref(fig:plotCramerV) shows the results of the Cramer's V calculations.
 The month of first publication and the publisher are highly associated (values close to 1). That is probably due to the individual publication cycle of the two publishers.
 As described before in Cramer's V lower values might already show a relevant association. That in mind an association between the alignment of the characters and the hair and eye color names seems to be relevant as well as the variables `sex` and `id`. The variables `alive` and `publisher` seem to be less associated. Nevertheless it will be worth to try these variables later. 
 
-``` {r plotCramerV, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warnings = FALSE, fig.cap= 'Results of Cramers V analysis of categorical variables in the train dataframe'}
+``` {r plotCramerV, fig.align = 'center', fig.asp = 0.8, out.width = "100%",fig.pos = "H", message = FALSE, warning = FALSE, fig.cap= 'Results of Cramers V analysis of categorical variables in the train dataframe'}
 association_matrix %>%
   filter(type=="cramersV") %>%
   ggplot(aes(xname,yname,fill=assoc_value))+
@@ -926,7 +926,7 @@ It results to $acc_{1} =$ `r round(acc1,3)`. Fit and prediction took  $\Delta t_
 
 The next approach to estimate the alignment of the characters is to use the numeric RGB values for eye and hair color. This will be done using local regression and the `gamLoess` method. @intro_DS In R this can be achieved with the **`gam`** @gam package. Additionally the packages **`splines`** @splines and **`foreach`** @foreach are needed.
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(gam)) install.packages("gam", repos = "http://cran.us.r-project.org")
 if(!require(splines)) install.packages("splines", repos = "http://cran.us.r-project.org")
@@ -973,7 +973,7 @@ acc2a <- mean(y_hat2a == test$align)
 The accuracy $acc_{2a}$ is `r round(acc2a,3)`. This is worse than guessing the outcome in model 1. 
 Figure \@ref(fig:plotLoess2a) shows the values of the alignment variable `align` in the prediction `y_hat2a` and the `test` set. The model estimated exclusively `Bad Characters` and `Reformed Criminals` but no `Good Characters`. In the `train` set as well as in the `test` set nearly no `Reformed Criminals` can be found. This error is probably due to the transformation of the estimated numeric values to  ordered levels as `Reformed Criminals` is the mid level. 
 
-``` {r plotLoess2a, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Distribution of alignments in prediction and the test dataset'}
+``` {r plotLoess2a, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warning = FALSE, fig.cap= 'Distribution of alignments in prediction and the test dataset'}
 results_mod2a  <- data.frame(y_hat2a,test$align) %>% pivot_longer(everything()) 
 results_mod2a %>% ggplot(aes(x=name,fill=value)) + 
                   geom_bar() +
@@ -1018,7 +1018,7 @@ acc2b <- mean(y_hat2b == test$align)
 
 It is $acc_{2b} =$ `r round(acc2b,3)` now, which is much better than before. This can be seen using figure \@ref(fig:plotLoess2b) as well. Now no `Reformed Criminals` are estimated anymore.
 
-``` {r plotLoess2b, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Distribution of alignments in estimation and test dataset in the new model 2b without "Reformed Criminals"'}
+``` {r plotLoess2b, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warning = FALSE, fig.cap= 'Distribution of alignments in estimation and test dataset in the new model 2b without "Reformed Criminals"'}
 results_mod2b  <- data.frame(y_hat2b,test$align) %>% pivot_longer(everything()) 
 results_mod2b %>% ggplot(aes(x=name,fill=value)) + 
                   geom_bar() +
@@ -1030,7 +1030,7 @@ results_mod2b %>% ggplot(aes(x=name,fill=value)) +
 
 As the given dataset includes mostly categorical data decision trees are an interesting approach as described in @intro_DS. They can be calculated using the **`rpart`** package. @rpart @intro_DS
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
 ```
@@ -1066,12 +1066,12 @@ The fit and prediction took $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds.
 
 The resulting decision tree can be plotted using the **`rpart.plot`** package. @rpartplot
 
-``` {r, echo=FALSE, message = FALSE, warnings = FALSE, results = FALSE}
+``` {r, echo=FALSE, message = FALSE, warning = FALSE, results = FALSE}
 # install package if missing
 if(!require(rpart.plot)) install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
 ```
 
-``` {r decTree3a, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Calculated decision tree to predict the alignment of a character using the categorical eye and hair color information, the rpart package and the train dataframe'}
+``` {r decTree3a, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warning = FALSE, fig.cap= 'Calculated decision tree to predict the alignment of a character using the categorical eye and hair color information, the rpart package and the train dataframe'}
 library(rpart.plot)
 prp(fit3a, type=2, extra=0)
 ```
@@ -1117,7 +1117,7 @@ The accuracy $acc_{3b}$ is `r round(acc3b,3)`. This is only little better than m
 
 The calculated decision tree can be seen in figure \@ref(fig:decTree3b).
 
-``` {r decTree3b, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Calculated decision tree to predict the alignment of a character using the numeric RGB eye and hair color information, the rpart package and the train dataframe'}
+``` {r decTree3b, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warning = FALSE, fig.cap= 'Calculated decision tree to predict the alignment of a character using the numeric RGB eye and hair color information, the rpart package and the train dataframe'}
 prp(fit3b, type=2, extra=0)
 ```
 
@@ -1153,7 +1153,7 @@ acc3c <- mean(y_hat3c == as.numeric(test$align))
 The overall accuracy $acc_{3c}$ is `r round(acc3c,3)`. The calculation took $\Delta t_{3c} =$ `r round(timeDiff3c,5)` seconds.
 
 Afterwards the resulting decision tree is plotted:
-``` {r decTree4, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warnings = FALSE, fig.cap= 'Calculated decision tree for model 3c'}
+``` {r decTree4, fig.align = 'center', fig.asp = 0.6, out.width = "100%", message = FALSE, warning = FALSE, fig.cap= 'Calculated decision tree for model 3c'}
 prp(fit3c, type=2, extra=0)
 ```
 
@@ -1200,7 +1200,7 @@ acc_values <- sapply(cp_values, function(cp_val){
 
 The results are given in figure \@ref(fig:plotcp).
 
-``` {r plotcp, fig.align = 'center', fig.asp = 0.55, out.width = "100%",  message = FALSE, warnings = FALSE, fig.cap= 'Results of the optimization of $c_p$'}
+``` {r plotcp, fig.align = 'center', fig.asp = 0.55, out.width = "100%",  message = FALSE, warning = FALSE, fig.cap= 'Results of the optimization of $c_p$'}
 results_cp <- data.frame(cp_values,acc_values)
 results_cp %>% ggplot(aes(x=cp_values, y=acc_values)) + geom_point()
 ```
@@ -1257,7 +1257,7 @@ This chapter presents the results of the different machine learning concepts whi
 
 The first approach only guesses the outcome as a baseline estimate (model1). It has an accuracy $acc_{1}$ of `r round(acc1,3)`. The prediction is computed in $\Delta t_{1} =$ `r round(timeDiff1,5)` seconds and very fast. 
 
-Then a local regression (loess) estimation was performed. In model 2a many levels are estimated wrong as `Reformed Criminals` and the resulting accuracy $acc_{2a}$ of `r round(acc2a,3)` is even below the one achieved by guessing the outcome. At the same time it is a lot slower with $\Delta t_{2a} =$ `r round(timeDiff2a,5)` seconds. A much better accuracy of $acc_{2b} =$ `r round(acc2b,3)` can be reached with a similar loess estimation but after the level `Reformed Criminals` has been removed from the `train` dataset in model 2b. This approach is a little slower with $\Delta t_{2b} =$ `r round(timeDiff2b,5)` seconds.
+Then a local regression (loess) estimation was performed. In model 2a many levels are estimated wrong as `Reformed Criminals` and the resulting accuracy $acc_{2a}$ of `r round(acc2a,3)` is even below the one achieved by guessing the outcome. At the same time it is a lot slower with $\Delta t_{2a} =$ `r round(timeDiff2a,5)` seconds. A much better accuracy of $acc_{2b} =$ `r round(acc2b,3)` can be reached with a similar loess estimation but after the level `Reformed Criminals` has been removed from the `train` dataset in model 2b. This approach takes about the same time as model 2a with $\Delta t_{2b} =$ `r round(timeDiff2b,5)` seconds.
 
 To include categorical variables the next approach is performed using decision trees. In model 3a the eye and hair color names are included as categorical data. This leads to an accuracy $acc_{3a}$ of `r round(acc3a,3)` which is much better than guessing. The computation takes $\Delta t_{3a} =$ `r round(timeDiff3a,5)` seconds. The next model uses the RGB values of eye and hair color instead of the color names. The computation time is reduced noteworthy by `r round(timeDiff3a,5) - round(timeDiff3b,5)` seconds to $\Delta t_{3b} =$ `r round(timeDiff3b,5)` seconds. 
 The accuracy improves little to $acc_{3b} =$ `r round(acc3b,3)`. Better results can be achieved in model 3c by adding other (categorical) information. This results in an accuracy $acc_{3c}$ of `r round(acc3c,3)`. The computation time is $\Delta t_{3c} =$ `r round(timeDiff3c,5)` seconds and a little higher than in model 3b but still a lot faster than using categorical hair and eye color names. 
